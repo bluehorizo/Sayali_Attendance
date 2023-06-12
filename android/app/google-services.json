@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "108309322679",
+    "project_id": "empattend-10769",
+    "storage_bucket": "empattend-10769.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:108309322679:android:faa4868d5c02829aeda632",
+        "android_client_info": {
+          "package_name": "com.example.googlesheet"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "108309322679-lpo6tv5jhor0mkh31nsmb6bihfsd73ia.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCZ0xbQej51D4TOS_MnvCwZ9BHo2Z539CY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "108309322679-lpo6tv5jhor0mkh31nsmb6bihfsd73ia.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

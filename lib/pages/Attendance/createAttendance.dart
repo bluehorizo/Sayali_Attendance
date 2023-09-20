@@ -11,7 +11,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:geocoding/geocoding.dart';
-import 'package:geolocator/geolocator.dart';
+// import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:maps_launcher/maps_launcher.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -19,9 +19,11 @@ import 'package:path/path.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../model/approvialmodel.dart';
 import '../../model/attendancemodel.dart';
 import '../../model/user.dart';
 import '../../operations/LeavesOperation.dart';
+import '../../operations/approvialOperation.dart';
 import '../../operations/attendanceOperations.dart';
 import '../../operations/authOperations.dart';
 import '../../operations/notification_services.dart';
@@ -30,6 +32,18 @@ import '../../widgets/genericTile.dart';
 import '../../widgets/stopwatchT.dart';
 import '../Patients/ReceiptFormat/salarySlip.dart';
 import 'package:timezone/timezone.dart' as tz;
+import 'package:flutter/cupertino.dart';
+
+class TimePickerModel extends ChangeNotifier {
+  TimeOfDay _selectedTime = TimeOfDay.now();
+
+  TimeOfDay get selectedTime => _selectedTime;
+
+  void setSelectedTime(TimeOfDay time) {
+    _selectedTime = time;
+    notifyListeners();
+  }
+}
 
 class CreateAttendance extends StatefulWidget {
   const CreateAttendance({Key? key}) : super(key: key);
@@ -40,9 +54,12 @@ class CreateAttendance extends StatefulWidget {
 
 class _CreateAttendanceState extends State<CreateAttendance> {
   GlobalKey<FormState> formskey = GlobalKey<FormState>();
+  GlobalKey<FormState> form = GlobalKey<FormState>();
+
   late SharedPreferences logindata;
   FlutterTts flutterTts = FlutterTts();
   late String username;
+  DateTime combinedDateTime2=DateTime.now();
   bool isUploaded = false;
   final DateFormat formatter = DateFormat('MMMM');
   final DateFormat formatter2 = DateFormat('MMM');
@@ -51,9 +68,12 @@ class _CreateAttendanceState extends State<CreateAttendance> {
   bool isAccepted = false;
   NotificationServices notificationServices = NotificationServices();
   List<Placemark> placemarks = [];
-
+  bool isOutTinePatched=false;
   late TextEditingController Completecontroller = TextEditingController();
   late TextEditingController reviewscontroller = TextEditingController();
+  late TextEditingController textController = TextEditingController();
+  late TextEditingController logouttimetextController = TextEditingController();
+
   late AttendanceModel attendanceModel = AttendanceModel(
       id: 0,
       date: "",
@@ -79,7 +99,36 @@ class _CreateAttendanceState extends State<CreateAttendance> {
       workedDays: "",
       dailyPayment: "",
       month: "");
-
+  EmployModel newemployModel = EmployModel(
+      id: "",
+      date: "",
+      empNumber: "",
+      full_name: "",
+      designation: "",
+      mobile_no: "9867199955",
+      alternate_no: "",
+      email: "",
+      gender: "",
+      date_of_birth: "",
+      address: "",
+      pan_card: "",
+      aadhar_card: "",
+      user_identification: "",
+      In_Time_1st: "",
+      Out_Time_1st: "",
+      In_Time_2nd: "",
+      Out_Time_2nd: "",
+      total_working_hours: "",
+      working_days: "",
+      sun_In_Time: "",
+      sun_out_Time: "",
+      sun_working_hours: "",
+      number_of_sunday: "",
+      salary: "",
+      days: "",
+      sal_per_days: "");
+  approvalmodel Approvemodel = approvalmodel(
+      id: "", name: "", outTime: "", reason: "", approved: "", rejected: "");
   double? lat, long; // longitude location
   int _selectedIndex = 0;
   bool isAdmin = false;
@@ -89,15 +138,35 @@ class _CreateAttendanceState extends State<CreateAttendance> {
   bool intimesvisible = true;
   bool ContainerVisible = true;
   bool TextVisible = true;
+  final DateFormat timeFormatter = DateFormat('hh:mm a');
   bool controllerVisible = true;
   List<AttendanceModel> existingList = [];
   late FirebaseStorage storage;
   TextEditingController reply = TextEditingController();
   FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
+
+  late TimeOfDay Time;
+
+  Future<void> selectedTimefunction(BuildContext context) async {
+    final TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: Time,
+    );
+
+    if (picked != null && picked != Time) {
+      setState(() {
+        Time = picked;
+      });
+    }
+  }
+
   @override
   void initState() {
-    // TODO: implement initState
+    super.initState();
+
+    Time = TimeOfDay.now();
+
     isAdmin = Provider.of<AuthOperation>(this.context, listen: false).isAdmin();
     staff = Provider.of<AuthOperation>(this.context, listen: false).user;
     Provider.of<EmployeeOperation>(this.context, listen: false)
@@ -130,169 +199,8 @@ class _CreateAttendanceState extends State<CreateAttendance> {
     NotificationDetails notiDetails =
         NotificationDetails(android: android, iOS: iOS);
 
-    // var firstIn = DateTime(
-    //     DateTime.now().year,
-    //     DateTime.now().month,
-    //     DateTime.now().day,
-    //     DateTime.parse(
-    //             Provider.of<EmployeeOperation>(this.context, listen: false)
-    //                 .staff
-    //                 .In_Time_1st)
-    //         .toLocal()
-    //         .hour,
-    //     DateTime.parse(
-    //                 Provider.of<EmployeeOperation>(this.context, listen: false)
-    //                     .staff
-    //                     .In_Time_1st)
-    //             .toLocal()
-    //             .minute -
-    //         8);
-    // var firstOut = DateTime(
-    //     DateTime.now().year,
-    //     DateTime.now().month,
-    //     DateTime.now().day,
-    //     DateTime.parse(
-    //             Provider.of<EmployeeOperation>(this.context, listen: false)
-    //                 .staff
-    //                 .Out_Time_1st)
-    //         .toLocal()
-    //         .hour,
-    //     DateTime.parse(
-    //                 Provider.of<EmployeeOperation>(this.context, listen: false)
-    //                     .staff
-    //                     .Out_Time_1st)
-    //             .toLocal()
-    //             .minute -
-    //         8);
-    // var secondIn = DateTime(
-    //     DateTime.now().year,
-    //     DateTime.now().month,
-    //     DateTime.now().day,
-    //     DateTime.parse(
-    //             Provider.of<EmployeeOperation>(this.context, listen: false)
-    //                 .staff
-    //                 .In_Time_2nd)
-    //         .toLocal()
-    //         .hour,
-    //     DateTime.parse(
-    //                 Provider.of<EmployeeOperation>(this.context, listen: false)
-    //                     .staff
-    //                     .In_Time_2nd)
-    //             .toLocal()
-    //             .minute -
-    //         8);
-    // var secondOut = DateTime(
-    //     DateTime.now().year,
-    //     DateTime.now().month,
-    //     DateTime.now().day,
-    //     DateTime.parse(
-    //             Provider.of<EmployeeOperation>(this.context, listen: false)
-    //                 .staff
-    //                 .Out_Time_2nd)
-    //         .toLocal()
-    //         .hour,
-    //     DateTime.parse(
-    //                 Provider.of<EmployeeOperation>(this.context, listen: false)
-    //                     .staff
-    //                     .Out_Time_2nd)
-    //             .toLocal()
-    //             .minute -
-    //         8);
-    // var nextDayeFirstIn = DateTime(
-    //     DateTime.now().year,
-    //     DateTime.now().month,
-    //     DateTime.now().day + 1,
-    //     DateTime.parse(
-    //             Provider.of<EmployeeOperation>(this.context, listen: false)
-    //                 .staff
-    //                 .Out_Time_1st)
-    //         .toLocal()
-    //         .hour,
-    //     DateTime.parse(
-    //                 Provider.of<EmployeeOperation>(this.context, listen: false)
-    //                     .staff
-    //                     .Out_Time_1st)
-    //             .toLocal()
-    //             .minute -
-    //         8);
-    // DateTime scheduleDate = DateTime.now().add(Duration(seconds: 2));
-    // // flutterLocalNotificationsPlugin.zonedSchedule(
-    // //     10,
-    // //     "Sample Notification",
-    // //     "This is a notification",
-    // //     tz.TZDateTime.from(scheduleDate, tz.local),
-    // //     notiDetails,
-    // //     uiLocalNotificationDateInterpretation:
-    // //         UILocalNotificationDateInterpretation.wallClockTime,
-    // //     androidAllowWhileIdle: true,
-    // //     payload: "notification-payload");
-    // // flutterLocalNotificationsPlugin.zonedSchedule(
-    // //     1,
-    // //     "Hello, ${Provider.of<EmployeeOperation>(this.context, listen: false).staff.full_name}",
-    // //     "Please Save Your In Time Entry ",
-    // //     tz.TZDateTime.from(firstIn, tz.local),
-    // //     notiDetails,
-    // //     uiLocalNotificationDateInterpretation:
-    // //         UILocalNotificationDateInterpretation.wallClockTime,
-    // //     androidAllowWhileIdle: true,
-    // //     payload: "notification-payload");
-    // // flutterLocalNotificationsPlugin.zonedSchedule(
-    // //     2,
-    // //     "Hello, ${Provider.of<EmployeeOperation>(this.context, listen: false).staff.full_name}",
-    // //     "Please Save Your Out Time Entry ",
-    // //     tz.TZDateTime.from(firstOut, tz.local),
-    // //     notiDetails,
-    // //     uiLocalNotificationDateInterpretation:
-    // //         UILocalNotificationDateInterpretation.wallClockTime,
-    // //     androidAllowWhileIdle: true,
-    // //     payload: "notification-payload");
-    // // print(secondIn.hour);
-    // // if (secondIn.hour == 00) {
-    // //   flutterLocalNotificationsPlugin.zonedSchedule(
-    // //       3,
-    // //       "Hello, ${Provider.of<EmployeeOperation>(this.context, listen: false).staff.full_name}",
-    // //       "Please Save Your Out Time Entry ",
-    // //       tz.TZDateTime.from(secondIn, tz.local),
-    // //       notiDetails,
-    // //       uiLocalNotificationDateInterpretation:
-    // //           UILocalNotificationDateInterpretation.wallClockTime,
-    // //       androidAllowWhileIdle: true,
-    // //       payload: "notification-payload");
-    // //   flutterLocalNotificationsPlugin.zonedSchedule(
-    // //       4,
-    // //       "Hello, ${Provider.of<EmployeeOperation>(this.context, listen: false).staff.full_name}",
-    // //       "Please Save Your Out Time Entry ",
-    // //       tz.TZDateTime.from(secondOut, tz.local),
-    // //       notiDetails,
-    // //       uiLocalNotificationDateInterpretation:
-    // //           UILocalNotificationDateInterpretation.wallClockTime,
-    // //       androidAllowWhileIdle: true,
-    // //       payload: "notification-payload");
-    // // }
-    // // AndroidNotificationDetails androidPlatformChannelSpecifics =
-    // //     AndroidNotificationDetails(
-    // //   'channel id',
-    // //   'channel name',
-    // //   groupKey: 'com.example.flutter_push_notifications',
-    // //   channelDescription: 'channel description',
-    // //   importance: Importance.max,
-    // //   priority: Priority.max,
-    // //   playSound: true,
-    // //   ticker: 'ticker',
-    // //   largeIcon: const DrawableResourceAndroidBitmap('justwater'),
-    // //   color: const Color(0xff2196f3),
-    // // );
-    // // flutterLocalNotificationsPlugin.zonedSchedule(
-    // //     5,
-    // //     "Hello, ${Provider.of<EmployeeOperation>(this.context, listen: false).staff.full_name}",
-    // //     "Please Save Your Out Time Entry ",
-    // //     tz.TZDateTime.from(nextDayeFirstIn, tz.local),
-    // //     notiDetails,
-    // //     uiLocalNotificationDateInterpretation:
-    // //         UILocalNotificationDateInterpretation.wallClockTime,
-    // //     androidAllowWhileIdle: true,
-    // //     payload: "notification-payload");
-    // // storage = FirebaseStorage.instance;
+    Provider.of<AprovelOperation>(this.context, listen: false).getFromSheet();
+
     super.initState();
   }
 
@@ -346,20 +254,46 @@ class _CreateAttendanceState extends State<CreateAttendance> {
                                     Visibility(
                                       visible: isAdmin,
                                       child: TextButton(
-                                        child: Text("Create"),
+                                        child: Text("Create",style: TextStyle(
+                                            fontWeight:
+                                            FontWeight
+                                                .bold,
+                                            color: Colors
+                                                .black,
+                                            fontSize: 12)),
                                         onPressed: () async {
                                           await Navigator.pushNamed(
                                               context, '/employeePage');
                                         },
                                       ),
                                     ),
-                                    SizedBox(
-                                      width: 20,
+
+                                    Visibility(
+                                      visible: isAdmin,
+                                      child: TextButton(
+                                        child: Text("Branch Rev",style: TextStyle(
+                                            fontWeight:
+                                            FontWeight
+                                            .bold,
+                                            color: Colors
+                                                .black,
+                                            fontSize: 12)),
+                                        onPressed: () async {
+                                          await Navigator.pushNamed(
+                                              context, '/employeePage');
+                                        },
+                                      ),
                                     ),
                                     Visibility(
                                       visible: isAdmin,
                                       child: TextButton(
-                                        child: Text("Available Staff"),
+                                        child: Text("Available Staff",style:TextStyle(
+                                            fontWeight:
+                                            FontWeight
+                                                .bold,
+                                            color: Colors
+                                                .black,
+                                            fontSize: 12)),
                                         onPressed: () {
                                           showModalBottomSheet(
                                               context: context,
@@ -482,10 +416,410 @@ class _CreateAttendanceState extends State<CreateAttendance> {
                                         },
                                       ),
                                     ),
+
                                     Visibility(
                                       visible: isAdmin,
                                       child: TextButton(
-                                        child: Text("Leave Application"),
+                                        child: Text("Login CR",style:TextStyle(
+                                            fontWeight:
+                                            FontWeight
+                                            .bold,
+                                            color: Colors
+                                                .black,
+                                            fontSize: 12)),
+                                        onPressed: () {
+                                          setState(() {
+
+                                          });
+                                          showModalBottomSheet(
+                                              context: context,
+                                              backgroundColor: Colors.white,
+                                              shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.vertical(
+                                                          top: Radius.circular(
+                                                              20))),
+                                              builder: (context) {
+                                                return Container(
+                                                  width: double.minPositive,
+                                                  child: Column(
+                                                    children: [
+                                                      Card(
+                                                        elevation: 10,
+                                                        color: Colors
+                                                            .lightBlue.shade50,
+                                                        shadowColor:
+                                                            Colors.black,
+                                                        // margin: EdgeInsets.all(10),
+                                                        child: ListTile(
+                                                          title: Row(
+                                                            mainAxisAlignment:
+                                                                MainAxisAlignment
+                                                                    .spaceBetween,
+                                                            children: [
+                                                              Container(
+                                                                child: Column(
+                                                                  children: [
+                                                                    Container(
+                                                                      child: Text(
+                                                                          "  Name  ",
+                                                                          style: TextStyle(
+                                                                              fontSize: 13,
+                                                                              fontWeight: FontWeight.w800)),
+                                                                    ),
+                                                                    Container(
+                                                                        child: Text(
+                                                                            "  Reason  ",
+                                                                            style:
+                                                                                TextStyle(fontSize: 13, fontWeight: FontWeight.w800))),
+                                                                  ],
+                                                                ),
+                                                              ),
+                                                              Row(
+                                                                children: [
+                                                                  Container(
+                                                                    child: Text(
+                                                                        "  Out time  ",
+                                                                        style: TextStyle(
+                                                                            fontSize:
+                                                                                13,
+                                                                            fontWeight:
+                                                                                FontWeight.w800)),
+                                                                  ),
+                                                                ],
+                                                              ),
+                                                              Container(
+                                                                child: Text(
+                                                                    "  Accept  ",
+                                                                    style: TextStyle(
+                                                                        fontSize:
+                                                                            13,
+                                                                        fontWeight:
+                                                                            FontWeight.w800)),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                      ),
+
+                                                      // Header
+                                                      Expanded(
+                                                        child:  FutureBuilder(
+                                                            future:
+                                                            Provider.of<AprovelOperation>(context, listen: false)
+                                                                .getFromSheet(),
+
+                                                            builder: (context, dataSnapshot) {
+                                                              if (dataSnapshot.connectionState == ConnectionState.waiting) {
+                                                                return Center(
+                                                                  child: CircularProgressIndicator(),
+                                                                );
+                                                              } else {
+                                                                if (dataSnapshot.error != null) {
+                                                                  return Center(
+                                                                    child: Text('An error occured'),
+                                                                  );
+                                                                } else {
+
+                                                                return  Consumer<AttendanceOperations>(
+                                                                      builder: (context, orderData12, child){return ListView
+                                                                          .builder(
+                                                                          itemCount:
+                                                                          Provider.of<AprovelOperation>(context, listen: false)
+                                                                              .productList
+                                                                              .length,
+                                                                          itemBuilder:
+                                                                              (BuildContext
+                                                                          context,
+                                                                              int index) {
+
+                                                                            return Container(
+                                                                              child:
+                                                                              ListTile(
+                                                                                title:
+                                                                                Row(
+                                                                                  mainAxisAlignment:
+                                                                                  MainAxisAlignment.spaceBetween,
+                                                                                  children: [
+                                                                                    Consumer<AttendanceOperations>(
+                                                                                        builder: (context, orderData12, child) => Column(
+                                                                                          children: [
+                                                                                            Text(  Provider.of<AprovelOperation>(context, listen: false).productList[index].name, style: TextStyle(color: Colors.black, fontSize: 15)),
+                                                                                            Container(
+                                                                                              child: Text(  Provider.of<AprovelOperation>(context, listen: false).productList[index].reason, style: TextStyle(color: Colors.black, fontSize: 15)),
+                                                                                            ),
+                                                                                            Container(
+                                                                                              child: Text(timeFormatter.format(DateTime.parse(  Provider.of<AprovelOperation>(context, listen: false).productList[index].outTime).toLocal().subtract(Duration(minutes: 8))).toString(), style: TextStyle(color: Colors.black, fontSize: 15)),
+                                                                                            ),
+                                                                                          ],
+                                                                                        )),
+                                                                                    Consumer<AttendanceOperations>(
+                                                                                        builder: (context, orderData12, child) => Container(
+                                                                                          child:
+                                                                                          Row(
+                                                                                            children: [
+                                                                                              IconButton(
+                                                                                                  onPressed: () async{
+                                                                                                    var  finalOutTimeGromAtt=DateTime.parse(Provider.of<AttendanceOperations>(context, listen: false).getAttendanceForOutTime(int.parse(  Provider.of<AprovelOperation>(context, listen: false).productList[index].id)).date);
+                                                                                                    var dateConverted = DateTime.parse(  Provider.of<AprovelOperation>(context, listen: false).productList[index].outTime).toLocal().subtract(Duration(minutes: 8));
+                                                                                                    DateTime now1 = DateTime.now();
+
+                                                                                                    // Combine the current date with the selected TimeOfDay
+
+                                                                                                   TimeOfDay finalTime =
+                                                                                                        await Provider.of<AttendanceOperations>(
+                                                                                                            context,
+                                                                                                            listen: false)
+                                                                                                            .selectTime(context);
+                                                                                                     combinedDateTime2 = DateTime(
+                                                                                                      finalOutTimeGromAtt.year,
+                                                                                                      finalOutTimeGromAtt.month,
+                                                                                                      finalOutTimeGromAtt.day,
+                                                                                                      finalTime.hour,
+                                                                                                      finalTime.minute,
+
+                                                                                                    );
+                                                                                                    isOutTinePatched=true;
+                                                                                                    attendanceModel.out_time=combinedDateTime2.toString();
+
+                                                                                                  },
+                                                                                                  icon: Icon(Icons.watch_later)),
+                                                                                              InkWell(
+                                                                                                onTap: () =>
+                                                                                                    Provider.of<AttendanceOperations>(
+                                                                                                        context,
+                                                                                                        listen: false)
+                                                                                                        .selectTime(context),
+                                                                                                child: Text(
+                                                                                                  Provider.of<AttendanceOperations>(
+                                                                                                      context,
+                                                                                                      listen: false)
+                                                                                                      .selectedRequestedTime !=
+                                                                                                      null
+                                                                                                      ? '${Provider.of<AttendanceOperations>(context, listen: false).selectedTime.format(context)}'
+                                                                                                      : 'No time selected',
+                                                                                                  style: TextStyle(fontSize: 18),
+                                                                                                ),
+                                                                                              ),
+                                                                                            ],
+                                                                                          ),
+                                                                                        )),
+                                                                                    Consumer<AprovelOperation>(
+                                                                                      builder: (context, orderData12, child) => Container(
+                                                                                        child: Row(
+                                                                                          children: [
+                                                                                            IconButton(
+                                                                                              icon: Icon(
+                                                                                                Icons.done_outline_outlined,
+                                                                                                color: Colors.green,
+                                                                                              ),
+                                                                                              onPressed: () async {
+
+                                                                                                var  finalOutTimeGromAtt=DateTime.parse(Provider.of<AttendanceOperations>(context, listen: false).getAttendanceForOutTime(int.parse(  Provider.of<AprovelOperation>(context, listen: false).productList[index].id)).date);
+                                                                                                var dateConverted = DateTime.parse(  Provider.of<AprovelOperation>(context, listen: false).productList[index].outTime).toLocal().subtract(Duration(minutes: 8));
+
+
+                                                                                                // Combine the current date with the selected TimeOfDay
+                                                                                                DateTime combinedDateTime = DateTime(
+                                                                                                  finalOutTimeGromAtt.year,
+                                                                                                  finalOutTimeGromAtt.month,
+                                                                                                  finalOutTimeGromAtt.day,
+                                                                                                  dateConverted.hour,
+                                                                                                  dateConverted.minute,
+                                                                                                );
+
+                                                                                                Provider.of<AprovelOperation>(context, listen: false).productList[index].outTime = combinedDateTime.toString();
+
+if(isOutTinePatched){
+
+  Provider.of<AprovelOperation>(context, listen: false).productList[index].outTime = combinedDateTime2.toString();
+
+}
+                                                                                                isOutTinePatched= false;
+                                                                                                attendanceModel.out_time = (  Provider.of<AprovelOperation>(context, listen: false).productList[index].outTime);
+                                                                                                attendanceModel.in_time = "--:--";
+
+                                                                                                attendanceModel.acceptOrNot = "false";
+                                                                                                attendanceModel.isWorking = "false";
+                                                                                                attendanceModel.name = staff!.name;
+                                                                                                attendanceModel.id = int.parse(  Provider.of<AprovelOperation>(context, listen: false).productList[index].id);
+
+                                                                                                var totalDuration = Duration(minutes: 00, hours: 00, seconds: 00);
+                                                                                                attendanceModel.totalHour = totalDuration.toString().substring(0, 4);
+                                                                                                ContainerVisible = false;
+                                                                                                TextVisible = false;
+                                                                                                final put = attendanceModel.imagesemp.split("media");
+
+                                                                                                // final hours = time.hour.toString().padLeft(2, '0');
+                                                                                                // final minutes = time.minute.toString().padLeft(2, '0');
+                                                                                                await Provider.of<AttendanceOperations>(context, listen: false).updateOutTime(attendanceModel);
+                                                                                                Provider.of<AprovelOperation>(context, listen: false).deleteAcccept(index);
+                                                                                              },
+                                                                                              color: Colors.blue,
+                                                                                            ),
+                                                                                            // IconButton(
+                                                                                            //   icon: Icon(
+                                                                                            //     Icons.cancel,
+                                                                                            //     color: Colors.red,
+                                                                                            //   ),
+                                                                                            //   onPressed: () {},
+
+                                                                                            // ),
+                                                                                          ],
+                                                                                        ),
+                                                                                      ),)
+                                                                                  ],
+                                                                                ),
+                                                                              ),
+                                                                            );
+                                                                          });});
+
+                                                                }
+                                                              }
+                                                            }),
+                                                        // child: Consumer<
+                                                        //         AprovelOperation>(
+                                                        //     builder: (context,
+                                                        //         myDataModel,
+                                                        //         child) {
+                                                        //   return ListView
+                                                        //       .builder(
+                                                        //           itemCount:
+                                                        //               myDataModel
+                                                        //                   .productList
+                                                        //                   .length,
+                                                        //           itemBuilder:
+                                                        //               (BuildContext
+                                                        //                       context,
+                                                        //                   int index) {
+                                                        //             return Container(
+                                                        //               child:
+                                                        //                   ListTile(
+                                                        //                 title:
+                                                        //                     Row(
+                                                        //                   mainAxisAlignment:
+                                                        //                       MainAxisAlignment.spaceBetween,
+                                                        //                   children: [
+                                                        //                     Consumer<AttendanceOperations>(
+                                                        //                         builder: (context, orderData12, child) => Column(
+                                                        //                               children: [
+                                                        //                                 Text(myDataModel.productList[index].name, style: TextStyle(color: Colors.black, fontSize: 15)),
+                                                        //                                 Container(
+                                                        //                                   child: Text(myDataModel.productList[index].reason, style: TextStyle(color: Colors.black, fontSize: 15)),
+                                                        //                                 ),
+                                                        //                                 Container(
+                                                        //                                   child: Text(timeFormatter.format(DateTime.parse(myDataModel.productList[index].outTime).toLocal().subtract(Duration(minutes: 8))).toString(), style: TextStyle(color: Colors.black, fontSize: 15)),
+                                                        //                                 ),
+                                                        //                               ],
+                                                        //                             )),
+                                                        //                     Consumer<AttendanceOperations>(
+                                                        //                         builder: (context, orderData12, child) => Container(
+                                                        //                               child: Row(
+                                                        //                                 // Text(myDataModel.productList[index].outTime, style: TextStyle(color: Colors.black, fontSize: 15)),
+                                                        //                                 children: [
+                                                        //                                   IconButton(onPressed: () => Provider.of<AttendanceOperations>(context, listen: false).selectTime(context), icon: Icon(Icons.watch_later)),
+                                                        //                                 ],
+                                                        //                               ),
+                                                        //                             )),
+                                                        //                     Consumer<AprovelOperation>(
+                                                        //                       builder: (context, orderData12, child) => Container(
+                                                        //                       child: Row(
+                                                        //                         children: [
+                                                        //                           IconButton(
+                                                        //                             icon: Icon(
+                                                        //                               Icons.done_outline_outlined,
+                                                        //                               color: Colors.green,
+                                                        //                             ),
+                                                        //                             onPressed: () async {
+                                                        //                               var now = myDataModel.productList[index].outTime;
+                                                        //                               final formatter = DateFormat('y-M-d H:mm:ss');
+                                                        //                               var  finalOutTimeGromAtt=DateTime.parse(Provider.of<AttendanceOperations>(context, listen: false).getAttendanceForOutTime(int.parse(myDataModel.productList[index].id)).date);
+                                                        //                               var dateConverted = DateTime.parse(myDataModel.productList[index].outTime).toLocal().subtract(Duration(minutes: 8));
+                                                        //                               DateTime now1 = DateTime.now();
+                                                        //
+                                                        //                               // Combine the current date with the selected TimeOfDay
+                                                        //                               DateTime combinedDateTime = DateTime(
+                                                        //                                 finalOutTimeGromAtt.year,
+                                                        //                                 finalOutTimeGromAtt.month,
+                                                        //                                 finalOutTimeGromAtt.day,
+                                                        //                                 dateConverted.hour,
+                                                        //                                 dateConverted.minute,
+                                                        //                               );
+                                                        //
+                                                        //                               myDataModel.productList[index].outTime = combinedDateTime.toString();
+                                                        //                               String actualTime = now.toString();
+                                                        //                               attendanceModel.date = actualTime;
+                                                        //                               print(myDataModel.productList[index].outTime);
+                                                        //
+                                                        //                               attendanceModel.out_time = (myDataModel.productList[index].outTime);
+                                                        //                               attendanceModel.in_time = "--:--";
+                                                        //
+                                                        //                               attendanceModel.acceptOrNot = "false";
+                                                        //                               attendanceModel.isWorking = "false";
+                                                        //                               attendanceModel.name = staff!.name;
+                                                        //                               attendanceModel.id = int.parse(myDataModel.productList[index].id);
+                                                        //
+                                                        //                               var totalDuration = Duration(minutes: 00, hours: 00, seconds: 00);
+                                                        //                               attendanceModel.totalHour = totalDuration.toString().substring(0, 4);
+                                                        //                               ContainerVisible = false;
+                                                        //                               TextVisible = false;
+                                                        //                               final put = attendanceModel.imagesemp.split("media");
+                                                        //
+                                                        //                               // final hours = time.hour.toString().padLeft(2, '0');
+                                                        //                               // final minutes = time.minute.toString().padLeft(2, '0');
+                                                        //                               await Provider.of<AttendanceOperations>(context, listen: false).updateOutTime(attendanceModel);
+                                                        //                             },
+                                                        //                             color: Colors.blue,
+                                                        //                           ),
+                                                        //                           IconButton(
+                                                        //                             icon: Icon(
+                                                        //                               Icons.cancel,
+                                                        //                               color: Colors.red,
+                                                        //                             ),
+                                                        //                             onPressed: () {},
+                                                        //                           ),
+                                                        //                         ],
+                                                        //                       ),
+                                                        //                     ),)
+                                                        //                   ],
+                                                        //                 ),
+                                                        //               ),
+                                                        //             );
+                                                        //           });
+                                                        // }),
+                                                      ),
+                                                      //  Row Data
+                                                      Container(
+                                                        child: Text(
+                                                          "Developed By Blue Horizon Automation Research",
+                                                          style: TextStyle(
+                                                              color: Colors
+                                                                  .blueAccent,
+                                                              fontStyle:
+                                                                  FontStyle
+                                                                      .italic),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                );
+                                              });
+                                        },
+                                      ),
+                                    ),
+
+                                    // gaurav
+
+                                    Visibility(
+                                      visible: isAdmin,
+                                      child: TextButton(
+                                        child: Text("Leave",style:TextStyle(
+                                            fontWeight:
+                                            FontWeight
+                                            .bold,
+                                            color: Colors
+                                                .black,
+                                            fontSize: 12)),
                                         onPressed: () {
                                           showModalBottomSheet(
                                               context: context,
@@ -933,7 +1267,7 @@ class _CreateAttendanceState extends State<CreateAttendance> {
                         listen: false)
                     .pickImage(ImageSource.camera);
                 await uploadfiles();
-                await getLatLong();
+                // await getLatLong();
               },
               child: Column(
                 children: [
@@ -1023,11 +1357,11 @@ class _CreateAttendanceState extends State<CreateAttendance> {
                         ? 'Out Time Entry'
                         : 'In Time Entry'),
                     style: ElevatedButton.styleFrom(
-                      primary:
-                          Provider.of<AttendanceOperations>(context, listen: false)
-                                  .isDone
-                              ? Colors.grey
-                              : appBarButtonBackColor,
+                      primary: Provider.of<AttendanceOperations>(context,
+                                  listen: false)
+                              .isDone
+                          ? Colors.grey
+                          : appBarButtonBackColor,
                       onPrimary: textColor,
                       shadowColor: appBarButtonBackColor,
                       shape: RoundedRectangleBorder(
@@ -1204,8 +1538,7 @@ class _CreateAttendanceState extends State<CreateAttendance> {
                 //     listDetails.add(e);
                 //   }
                 // }).toList();
-                // Navigator.of(context).pushNamed(
-                //     DonatorDonationBillDetails.routeName,
+                // Navigator.of(context).pushNamed(                //     DonatorDonationBillDetails.routeName,
                 //     arguments: listDetails);
               },
               color: Theme.of(context).primaryColor,
@@ -1695,11 +2028,26 @@ class _CreateAttendanceState extends State<CreateAttendance> {
     //   return;
     // }
     attendanceModel.name = staff!.name;
-    if (Provider.of<AttendanceOperations>(context, listen: false).isWorking) {
+    DateTime currentDate = DateTime.now();
+    TimeOfDay time = TimeOfDay(hour: 11, minute: 30);
+
+    var inDate = Provider.of<AttendanceOperations>(context, listen: false)
+            .workingList
+            .isEmpty
+        ? currentDate
+        : DateTime.parse(
+            Provider.of<AttendanceOperations>(context, listen: false)
+                .workingList[0]
+                .in_time);
+
+    DateTime actualDate = DateTime(2023, 7, 4);
+    if (Provider.of<AttendanceOperations>(context, listen: false).isWorking &&
+        currentDate.day == inDate.day) {
       Provider.of<AttendanceOperations>(context, listen: false).inTime();
       attendanceModel.date = actualTime;
       attendanceModel.out_time = actualTime;
       attendanceModel.in_time = "--:--";
+
       attendanceModel.acceptOrNot = "false";
       attendanceModel.isWorking = "false";
       attendanceModel.name = staff!.name;
@@ -1707,10 +2055,6 @@ class _CreateAttendanceState extends State<CreateAttendance> {
           Provider.of<AttendanceOperations>(context, listen: false)
               .workingList[0]
               .id;
-      var inDate = DateTime.parse(
-          Provider.of<AttendanceOperations>(context, listen: false)
-              .workingList[0]
-              .in_time);
 
       var seconds = (DateTime.parse(attendanceModel.out_time)
           .difference(inDate)
@@ -1721,6 +2065,9 @@ class _CreateAttendanceState extends State<CreateAttendance> {
       ContainerVisible = false;
       TextVisible = false;
       final put = attendanceModel.imagesemp.split("media");
+
+      // final hours = time.hour.toString().padLeft(2, '0');
+      // final minutes = time.minute.toString().padLeft(2, '0');
       await Provider.of<AttendanceOperations>(context, listen: false)
           .updateOutTime(attendanceModel);
       Provider.of<AttendanceOperations>(context, listen: false).isWorking =
@@ -1728,6 +2075,127 @@ class _CreateAttendanceState extends State<CreateAttendance> {
       notificationServices.notificationSend(attendanceModel, false,
           Provider.of<AuthOperation>(this.context, listen: false).deviceToken);
       _shoToast("Out Time Entry stored, Thank You");
+    } else if (Provider.of<AttendanceOperations>(context, listen: false)
+            .isWorking &&
+        currentDate.day != inDate.day) {
+      showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return Center(
+              child: AlertDialog(
+                title: Center(child: Text('        OUT TIME AlERT      ')),
+                content: Form(
+                  key: form,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Consumer<AttendanceOperations>(
+                          builder: (context, orderData12, child) => Container(
+                                child:
+                                Row(
+                                  children: [
+                                    IconButton(
+                                        onPressed: () {
+                                          Approvemodel.outTime =
+                                              Provider.of<AttendanceOperations>(
+                                                      context,
+                                                      listen: false)
+                                                  .selectTime(context)
+                                                  .toString();
+                                        },
+                                        icon: Icon(Icons.watch_later)),
+                                    InkWell(
+                                      onTap: () =>
+                                          Provider.of<AttendanceOperations>(
+                                                  context,
+                                                  listen: false)
+                                              .selectTime(context),
+                                      child: Text(
+                                        Provider.of<AttendanceOperations>(
+                                                        context,
+                                                        listen: false)
+                                                    .selectedRequestedTime !=
+                                                null
+                                            ? '${Provider.of<AttendanceOperations>(context, listen: false).selectedTime.format(context)}'
+                                            : 'No time selected',
+                                        style: TextStyle(fontSize: 18),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )),
+                      TextFormField(
+                        controller: textController,
+                        onSaved: (value) {
+                          Approvemodel.reason = value!;
+                          // textController.clear();
+                        },
+                        decoration: InputDecoration(
+                          hintText: 'Enter the Reason',
+                          contentPadding:
+                              EdgeInsets.fromLTRB(20.0, 15.0, 20.0, 15.0),
+                          border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(32.0)),
+                        ),
+                      ),
+                      SizedBox(
+                        height: 20,
+                      ),
+                      IconButton(
+                        icon: Icon(
+                          MdiIcons.whatsapp,
+                          color: Colors.green,
+                        ),
+                        onPressed: () async {
+                          if (!form.currentState!.validate()) {
+                            return;
+                          }
+
+                          form.currentState?.save();
+                          Provider.of<AprovelOperation>(context, listen: false)
+                              .submitForm(
+                                  Approvemodel,
+                                  Provider.of<AttendanceOperations>(context,
+                                          listen: false)
+                                      .workingList[0],
+                                  Provider.of<AttendanceOperations>(context,
+                                          listen: false)
+                                      .selectedTime
+                                      .format(context));
+                          // DateTime combinedDateTime = DateTime(
+                          //   finalOutTimeGromAtt.year,
+                          //   finalOutTimeGromAtt.month,
+                          //   finalOutTimeGromAtt.day,
+                          //   dateConverted.hour,
+                          //   dateConverted.minute,
+                          // );
+                          //
+                          // myDataModel.productList[index].outTime = combinedDateTime.toString();
+                          var dateConverted = DateTime.parse( Provider.of<AttendanceOperations>(context,
+                              listen: false)
+                              .workingList[0].date).toLocal().subtract(Duration(minutes:8));
+                          openWhatsApp(newemployModel.mobile_no,
+                              "*NAME* - ${Provider.of<AttendanceOperations>(context,
+                              listen: false)
+                              .workingList[0].name} \n \n*LOGOUT TIME FORGOT APPROVIAL FOR TODAYS LOGIN* \n \n*LOGOUT TIME* - ${Provider.of<AttendanceOperations>(context, listen: false).selectedTime.format(context)} on ${dd.format(dateConverted)}. \n \n*REASION* - ${Approvemodel.reason}");
+                          // launch(employModel.imagesemp);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+
+                // actions: <Widget>[
+                //   TextButton(
+                //     child: Text('Close'),
+                //     onPressed: () {
+                //       Navigator.of(context).pop();
+                //     },
+                //   ),
+                // ],
+              ),
+            );
+          });
     } else {
       Provider.of<AttendanceOperations>(context, listen: false).inTime();
       attendanceModel.in_time = actualTime;
@@ -1835,54 +2303,54 @@ class _CreateAttendanceState extends State<CreateAttendance> {
   //Latitude and longitude Information
   // For convert lat long to address
 
-  getLatLong() {
-    Future<Position> data = _determinePosition();
-
-    data.then((value) {
-      lat = value.latitude;
-      long = value.longitude;
-      // attendanceModel.longLat = "${value.latitude},${value.longitude}";
-      // print(attendanceModel.longLat);
-      attendanceModel.latitude = lat.toString();
-      attendanceModel.longitude = long.toString();
-      getAddress(value.latitude, value.longitude);
-    }).catchError((error) {
-      print("Error $error");
-    });
-  } // For Employee Only
-
-  Future<Position> _determinePosition() async {
-    bool serviceEnabled;
-    LocationPermission permission;
-    var location = Location1.Location();
-
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      bool isturnedon = await location.requestService();
-      if (isturnedon) {
-        print("GPS device is turned ON");
-      } else {
-        print("GPS Device is still OFF");
-      }
-      return Future.error('Location services are disabled.');
-    }
-
-    permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        return Future.error('Location permissions are denied');
-      }
-    }
-
-    if (permission == LocationPermission.deniedForever) {
-      return Future.error(
-          'Location permissions are permanently denied, we cannot request permissions.');
-    }
-
-    return await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high);
-  } // For Employee Only
+  // getLatLong() {
+  //   Future<Position> data = _determinePosition();
+  //
+  //   data.then((value) {
+  //     lat = value.latitude;
+  //     long = value.longitude;
+  //     // attendanceModel.longLat = "${value.latitude},${value.longitude}";
+  //     // print(attendanceModel.longLat);
+  //     attendanceModel.latitude = lat.toString();
+  //     attendanceModel.longitude = long.toString();
+  //     getAddress(value.latitude, value.longitude);
+  //   }).catchError((error) {
+  //     print("Error $error");
+  //   });
+  // } // For Employee Only
+  //
+  // Future<Position> _determinePosition() async {
+  //   bool serviceEnabled;
+  //   LocationPermission permission;
+  //   var location = Location1.Location();
+  //
+  //   serviceEnabled = await Geolocator.isLocationServiceEnabled();
+  //   if (!serviceEnabled) {
+  //     bool isturnedon = await location.requestService();
+  //     if (isturnedon) {
+  //       print("GPS device is turned ON");
+  //     } else {
+  //       print("GPS Device is still OFF");
+  //     }
+  //     return Future.error('Location services are disabled.');
+  //   }
+  //
+  //   permission = await Geolocator.checkPermission();
+  //   if (permission == LocationPermission.denied) {
+  //     permission = await Geolocator.requestPermission();
+  //     if (permission == LocationPermission.denied) {
+  //       return Future.error('Location permissions are denied');
+  //     }
+  //   }
+  //
+  //   if (permission == LocationPermission.deniedForever) {
+  //     return Future.error(
+  //         'Location permissions are permanently denied, we cannot request permissions.');
+  //   }
+  //
+  //   return await Geolocator.getCurrentPosition(
+  //       desiredAccuracy: LocationAccuracy.high);
+  // } // For Employee Only
 
   getAddress(lat, long) async {
     placemarks = await placemarkFromCoordinates(lat, long);
@@ -1899,13 +2367,26 @@ class _CreateAttendanceState extends State<CreateAttendance> {
 
   Future<void> openWhatsApp(String phoneNumber, String message) async {
     String url =
-        "whatsapp://send?phone=$phoneNumber&text=${Uri.parse(message)}";
+        "whatsapp://send?phone=$phoneNumber&text=${message}";
     if (await canLaunchUrl(Uri.parse(url))) {
       await launchUrl(Uri.parse(
         url,
       ));
     } else {
       throw 'Could not launch $url';
+    }
+  }
+
+  void _selecteddTime(BuildContext context) async {
+    TimePickerModel timePickerModel =
+        Provider.of<TimePickerModel>(context, listen: false);
+    final TimeOfDay? pickedTime = await showTimePicker(
+      context: context,
+      initialTime: timePickerModel.selectedTime,
+    );
+
+    if (pickedTime != null) {
+      timePickerModel.setSelectedTime(pickedTime);
     }
   }
 }

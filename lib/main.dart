@@ -21,10 +21,12 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:upgrader/upgrader.dart';
 import 'model/user.dart';
+import 'operations/approvialOperation.dart';
 import 'operations/attendanceOperations.dart';
 import 'operations/diagnosisOperation.dart';
 import 'operations/employeeOperation.dart';
 import 'operations/local_notification_service.dart';
+import 'operations/pacientFormOpeation.dart';
 import 'operations/patientOperation.dart';
 import 'operations/receiptOperation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -58,7 +60,12 @@ Future<void> main() async {
       ChangeNotifierProvider(
           create: (BuildContext context) => TherepyOperation()),
       ChangeNotifierProvider(
-          create: (BuildContext context) => LeaveOperations())
+          create: (BuildContext context) => LeaveOperations()),
+      ChangeNotifierProvider(
+          create: (BuildContext context) =>PacientForamOperation()),
+      ChangeNotifierProvider(
+          create: (BuildContext context) => AprovelOperation())
+
     ],
     child: MyApp(),
   ));
@@ -84,6 +91,7 @@ class _MyAppState extends State<MyApp> {
   // late String token;
   // @override
   void initState() {
+    Provider.of<AprovelOperation>(context, listen: false).getFromSheet();
     autoLogin();
     service = LocalNotificationService();
     Provider.of<DropDownListMasterOperation>(context, listen: false)
@@ -92,6 +100,7 @@ class _MyAppState extends State<MyApp> {
     if (Platform.isAndroid) Firebase.initializeApp();
     Provider.of<AttendanceOperations>(context, listen: false).initAttendAuth();
     Provider.of<RceiptOperation>(context, listen: false).getReceiptFromSheet();
+    Provider.of<DropDownListMasterOperation>(context, listen: false).getDropDownListFromSheet();
   }
 
   void check_if_already_login() async {
@@ -118,6 +127,7 @@ class _MyAppState extends State<MyApp> {
         '/createPatient': (context) => CreatePatient(),
         '/createAppointment': (context) => CreateAppointment(),
         '/createDiagnosis': (context) => CreateDiagnosisMainPage()
+
       },
       debugShowCheckedModeBanner: false,
     );

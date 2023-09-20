@@ -234,7 +234,8 @@ class _CreatePatientState extends State<CreateAppointment> {
                               ),
                               Padding(
                                 padding: const EdgeInsets.all(8.0),
-                                child: TextFieldSearch(
+                                child:
+                                TextFieldSearch(
                                     decoration: InputDecoration(
                                       suffix: IconButton(
                                           icon: Icon(Icons.add_circle_outline,

@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../operations/attendanceOperations.dart';
 import '../../operations/authOperations.dart';
 import 'attendanceHistory.dart';
+import 'pacientFormPage.dart';
 
 class AttendancePage extends StatefulWidget {
   const AttendancePage({Key? key}) : super(key: key);
@@ -102,7 +103,7 @@ class _AttendancePageState extends State<AttendancePage> {
               return Container(
                 padding: EdgeInsets.only(left: 10, top: 10, right: 10),
                 child: DefaultTabController(
-                  length: 2,
+                  length: 3,
                   child: Center(
                     child: Column(
                       children: [
@@ -120,6 +121,8 @@ class _AttendancePageState extends State<AttendancePage> {
                             tabs: [
                               Tab(text: 'Attendance'),
                               Tab(text: 'History'),
+                              Tab(text: 'Collections'),
+                              // Tab(text: 'Report'),
                             ],
                           ),
                         ),
@@ -128,6 +131,7 @@ class _AttendancePageState extends State<AttendancePage> {
                           child: TabBarView(children: [
                             CreateAttendance(),
                             AttendanceHistory(),
+                            Pacientform(),
                           ]),
                         )
                         // Visibility(

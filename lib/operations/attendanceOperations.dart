@@ -9,9 +9,11 @@ import 'package:googlesheet/model/employeemodel.dart';
 import 'package:googlesheet/model/inTimeEntry.dart';
 import 'package:gsheets/gsheets.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert' as convert;
+import '../model/approvialmodel.dart';
 import '../model/attendancemodel.dart';
 import 'gsheetConfiguration.dart';
 import 'package:googlesheet/notification_service.dart';
@@ -23,6 +25,7 @@ class AttendanceOperations extends ChangeNotifier {
   List<AttendanceModel> monthlyCalculationData = [];
   List<AttendanceModel> tempMonthlyCalculationData = [];
   List<AttendanceModel> workingList = [];
+  TimeOfDay selectedRequestedTime = TimeOfDay.now();
   String getSalary = "0";
   bool isDone = false;
   int last_id = 0;
@@ -31,12 +34,13 @@ class AttendanceOperations extends ChangeNotifier {
   int totalDayWorking = 0;
   final void Function(String) callback = (dw) {};
   bool isWorking = false;
+
   static const String URL =
       "https://script.google.com/macros/s/AKfycbyHxgaDcmMDb_zv2DMyGv3IWZHLB-UD19la6qO8sqbtRRMpuF0LJL2d_eyL_ctRP2N8yw/exec";
   static const String updateReviewURL =
       "https://script.google.com/macros/s/AKfycbw7DhOlvdiIaYVTb3tI8GLignA3kSkbP4l1I6V9_ziut2UkJZSMd5GvMiiCFsbWW2Z04g/exec";
   static const String attendanceUpdate =
-      "https://script.google.com/macros/s/AKfycbxh5j5DrEhN4NgSe3LITeEaRHkCubEoGLAnGuv0djIB2lZZyeMHuCyfEh2-Gua875UzCA/exec";
+      "https://script.google.com/macros/s/AKfycbwn30D-PilY-sPkKsk1WzavhER-wuJvucaAGKDrNFziDibbW1vkBxS6FLXfxpSOg060KQ/exec";
   final issueUrl =
       'https://script.google.com/macros/s/AKfycbzrT3f8jpyWRhGLGVb0mu1OJuCWn_rXUYv0yAOLCBrZ4u1ISEIftgR2oQ_SaDs4WclePg/exec';
   static const STATUS_SUCCESS = "SUCCESS";
@@ -72,6 +76,32 @@ class AttendanceOperations extends ChangeNotifier {
     } catch (e) {
       print('Init Error: $e');
     }
+  }
+
+  TimeOfDay stringToTimeOfDay(String timeString) {
+    // Split the timeString to extract hours and minutes
+    List<String> timeParts = timeString.split(':');
+    int hours = int.parse(timeParts[0]);
+    int minutes = int.parse(timeParts[1]);
+
+    // Create a new TimeOfDay object
+    TimeOfDay timeOfDay = TimeOfDay(hour: hours, minute: minutes);
+    return timeOfDay;
+  }
+  Future<TimeOfDay> selectTime(BuildContext context) async {
+    final TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: _selectedTime,
+    );
+
+    // If the user selects a time, update the selected time
+    if (picked != null && picked != _selectedTime) {
+
+        _selectedTime = picked;
+
+    }
+    notifyListeners();
+    return _selectedTime;
   }
 
   Future<File?> pickImage(ImageSource source) async {
@@ -147,7 +177,16 @@ class AttendanceOperations extends ChangeNotifier {
     notifyListeners();
     return isDone;
   }
+  AttendanceModel getAttendanceForOutTime(int id){
+    AttendanceModel tempAttendance=attendanceData[0];
+    attendanceData.map((e) {
+      if(e.id==id){
+        tempAttendance=e;
+      }
 
+    }).toList();
+    return tempAttendance;
+  }
   Future submitForm(AttendanceModel attendanceModel) async {
     try {
       workingList = [];
@@ -173,7 +212,25 @@ class AttendanceOperations extends ChangeNotifier {
       print(e);
     }
   } //not used
+  String formatTimeOfDay(TimeOfDay time) {
+    // Get the current date to combine with the TimeOfDay
+    DateTime now = DateTime.now();
 
+    // Combine the current date with the selected TimeOfDay
+    DateTime combinedDateTime = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      time.hour,
+      time.minute,
+    );
+
+    // Define the format for the time
+    final DateFormat timeFormat = DateFormat('hh:mm a');
+
+    // Format the combined DateTime using the time format
+    return timeFormat.format(combinedDateTime);
+  }
   Future submitForm2(String name, String issue) async {
     final response = await http.post(Uri.parse(issueUrl), body: {
       'name': name,
@@ -321,7 +378,7 @@ class AttendanceOperations extends ChangeNotifier {
                 double.parse(employModel.sun_working_hours) * sunday) *
             24 +
         0.0;
-    print("Eorking Hours:${requiredHours}");
+    print("Working Hours:${requiredHours}");
     attendanceData.forEach((element) {
       if ((name == element.name) &&
           (selectedMonth.month == DateTime.parse(element.date).month &&
@@ -392,4 +449,13 @@ class AttendanceOperations extends ChangeNotifier {
       return false;
     }
   } //  // write function
+
+  TimeOfDay _selectedTime = TimeOfDay.now();
+
+  TimeOfDay get selectedTime => _selectedTime;
+
+  void setSelectedTime(TimeOfDay time) {
+    _selectedTime = time;
+    notifyListeners();
+  }
 }

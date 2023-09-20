@@ -21,41 +21,7 @@ class PacientForamOperation extends ChangeNotifier {
   static const String URL =
       "https://script.google.com/macros/s/AKfycby0fxywOGDCvvt_0etLmoMhZ_i-g8ILGKM2Fw_bChe4qz3GxtrySvAE58jwAKsg4T38yA/exec";
 
-  // void WriteTransferedListOnSheet(String date,String patientName,String branch_name,String user_names,
-  //    String amount) async {
-  //   final url = URL;
-  //
-  //   final headers = {'Content-Type': 'application/json'};
-  //   final body = {
-  //     'date': date,
-  //     'patientName': patientName,
-  //     'branch_name': branch_name,
-  //     'user_names': user_names,
-  //     'amount': amount,
-  //
-  //   };
-  //   final response = await http.post(Uri.parse(url),
-  //       headers: headers, body: json.encode(body));
-  // }
-  // static const String URL =
-  //     "https://script.google.com/macros/s/AKfycbwRn6mrifoiX8DMFfJVrYYoU9eOcEIaVdgYjTV27qHc5SVAi8yonb228PQY_mFwYnCRJg/exec";
-  // static const STATUS_SUCCESS = "SUCCESS";
-  // int getId() {
-  //   return int.parse(receiptsformData.first.id) + 1;
-  // }
-  //
-  // void submitForm(PatientReportModel employModel) async {
-  //   try {
-  //
-  //
-  //     await http.get(Uri.parse(URL + employModel.toParams())).then((response) {
-  //       receiptsformData.add(employModel);
-  //       callback(convert.jsonDecode(response.body)['status']);
-  //     });
-  //   } catch (e) {
-  //     print(e);
-  //   }
-  // }
+
 
   Future<bool> submitForm(PatientReportModel patientReportModel) async {
     try {

@@ -280,7 +280,7 @@ class _CreateAttendanceState extends State<CreateAttendance> {
                                             fontSize: 12)),
                                         onPressed: () async {
                                           await Navigator.pushNamed(
-                                              context, '/employeePage');
+                                              context, '/branch_rev');
                                         },
                                       ),
                                     ),

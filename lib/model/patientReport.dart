@@ -1,4 +1,5 @@
 class PatientReportModel {
+  String id;
   String date;
   String patientName;
   String branch_name;
@@ -6,6 +7,7 @@ class PatientReportModel {
   String user_names;
 
   PatientReportModel({
+    required this.id,
     required this.date,
     required this.patientName,
     required this.branch_name,
@@ -15,6 +17,7 @@ class PatientReportModel {
 
   factory PatientReportModel.fromJson(dynamic json) {
     return PatientReportModel(
+      id: "${json['id']}",
       date: "${json['date']}",
       patientName: "${json['patientName']}",
       branch_name: "${json['branch_name']}",
@@ -24,7 +27,7 @@ class PatientReportModel {
   }
 
   Map toJson() => {
-        "id": 0,
+        "id": id,
         "date": date,
         "patient_name": patientName,
         "branch_name": branch_name,
@@ -32,5 +35,5 @@ class PatientReportModel {
         "user_names": user_names,
       };
   String toParams() =>
-      "?date=$date&patientName=$patientName&branch_name=$branch_name&amount=$amount&user_names=$user_names";
+      "?id=$id&date=$date&patientName=$patientName&branch_name=$branch_name&amount=$amount&user_names=$user_names";
 }

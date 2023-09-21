@@ -15,6 +15,7 @@ import 'package:googlesheet/pages/Patients/patientPage.dart';
 import 'package:googlesheet/pages/homepage.dart';
 import 'package:googlesheet/pages/loginpage.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:googlesheet/showmodal/branchrev.dart';
 import 'package:googlesheet/showmodal/employinfoshowmodal.dart';
 import 'package:googlesheet/widgets/stopwatchT.dart';
 import 'package:provider/provider.dart';
@@ -101,6 +102,7 @@ class _MyAppState extends State<MyApp> {
     Provider.of<AttendanceOperations>(context, listen: false).initAttendAuth();
     Provider.of<RceiptOperation>(context, listen: false).getReceiptFromSheet();
     Provider.of<DropDownListMasterOperation>(context, listen: false).getDropDownListFromSheet();
+    Provider.of<PacientForamOperation>(context, listen: false).getdatafromPacientReport();
   }
 
   void check_if_already_login() async {
@@ -126,7 +128,8 @@ class _MyAppState extends State<MyApp> {
         '/employeePage': (context) => EmployInfoShowModal(),
         '/createPatient': (context) => CreatePatient(),
         '/createAppointment': (context) => CreateAppointment(),
-        '/createDiagnosis': (context) => CreateDiagnosisMainPage()
+        '/createDiagnosis': (context) => CreateDiagnosisMainPage(),
+        '/branch_rev': (context) =>branch_rev(),
 
       },
       debugShowCheckedModeBanner: false,

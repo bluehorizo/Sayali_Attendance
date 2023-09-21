@@ -99,4 +99,20 @@ class PacientForamOperation extends ChangeNotifier {
       },
     );
   }
+
+
+
+  Future getdatafromPacientReport() async {
+    var rawData = await http.get(Uri.parse(
+        "https://script.google.com/macros/s/AKfycbwzTvNW-q2bz6GGwWiWmG4jZo5fSd6eEQYQeyLEFn5_uwmdwUTNa9SFI7ejjl3xLW0i9A/exec"));
+    var jsonProspectList = convert.jsonDecode(rawData.body);
+    // prospectList = jsonProspectList.map((json) {
+    //   Prospect.fromJson(json);
+    // });
+    final List<PatientReportModel> tempSevaList = [];
+    jsonProspectList.forEach((element) {
+      tempSevaList.add(PatientReportModel.fromJson(element));
+    });
+    receiptsformData = tempSevaList;
+  }
 }

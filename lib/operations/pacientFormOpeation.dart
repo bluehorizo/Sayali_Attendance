@@ -15,21 +15,19 @@ import 'gsheetConfiguration.dart';
 
 class PacientForamOperation extends ChangeNotifier {
   List<PatientReportModel> receiptsformData = [];
-  String URLPost='https://script.google.com/macros/s/AKfycbw-26qgHMfV2UCTYMZqDpXEEjlIDnNRXxkrjDkBdwVOMvgekKiRFPICGtWvT2aectL-4w/exec';
+  String URLPost =
+      'https://script.google.com/macros/s/AKfycbw-26qgHMfV2UCTYMZqDpXEEjlIDnNRXxkrjDkBdwVOMvgekKiRFPICGtWvT2aectL-4w/exec';
   late final void Function(String) callback;
 
   static const String URL =
       "https://script.google.com/macros/s/AKfycby0fxywOGDCvvt_0etLmoMhZ_i-g8ILGKM2Fw_bChe4qz3GxtrySvAE58jwAKsg4T38yA/exec";
-
-
 
   Future<bool> submitForm(PatientReportModel patientReportModel) async {
     try {
       final SharedPreferences prefs = await SharedPreferences.getInstance();
       final String token = prefs.getString('token')!;
       final String designation = prefs.getString('designation')!;
-      final String user_identification =
-          prefs.getString('name')!;
+      final String user_identification = prefs.getString('name')!;
       patientReportModel.user_names = user_identification;
       final bool response = await http
           .get(Uri.parse(URL + patientReportModel.toParams()))
@@ -50,11 +48,11 @@ class PacientForamOperation extends ChangeNotifier {
       return false;
     }
   }
+
   Future<bool> addPatientReportSpreadsheet(PatientReportModel data) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
 
-    final String user_identification =
-    prefs.getString('name')!;
+    final String user_identification = prefs.getString('name')!;
     data.user_names = user_identification;
     final response = await http.post(
       Uri.parse(URLPost),
@@ -73,10 +71,26 @@ class PacientForamOperation extends ChangeNotifier {
       return false;
     }
   }
+
   String formatDate(String datetimeString) {
     final formatter = DateFormat('dd-MM-yyyy');
     DateTime dateTime = DateTime.parse(datetimeString);
     return formatter.format(dateTime);
+  }
+
+  Future getpatientMonthlyList(DateTime selectedDate) async {
+    List<PatientReportModel> filteredData = [];
+    receiptsformData.map((receipt) {
+      if (DateTime.parse(receipt.date).month == selectedDate.month &&
+          DateTime.parse(receipt.date).year == selectedDate.year) {
+        print("1234567 ${receipt.date}");
+        filteredData.add(receipt);
+        print(filteredData);
+
+      }
+    }).toList();
+    receiptsformData=filteredData;
+    notifyListeners();
   }
 
   // Function to show the alert dialog
@@ -99,8 +113,6 @@ class PacientForamOperation extends ChangeNotifier {
       },
     );
   }
-
-
 
   Future getdatafromPacientReport() async {
     var rawData = await http.get(Uri.parse(

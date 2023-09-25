@@ -76,6 +76,7 @@ dependencies:
   flutter_tts:
   firebase_messaging:
   app_settings:
+  pie_chart:
 
 
 

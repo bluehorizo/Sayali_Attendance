@@ -15,6 +15,7 @@ import 'gsheetConfiguration.dart';
 
 class PacientForamOperation extends ChangeNotifier {
   List<PatientReportModel> receiptsformData = [];
+  List<PatientReportModel> listrev =[];
   String URLPost =
       'https://script.google.com/macros/s/AKfycbw-26qgHMfV2UCTYMZqDpXEEjlIDnNRXxkrjDkBdwVOMvgekKiRFPICGtWvT2aectL-4w/exec';
   late final void Function(String) callback;
@@ -77,19 +78,24 @@ class PacientForamOperation extends ChangeNotifier {
     DateTime dateTime = DateTime.parse(datetimeString);
     return formatter.format(dateTime);
   }
+  DateTime _datepick = DateTime.now();
 
-  Future getpatientMonthlyList(DateTime selectedDate) async {
+  DateTime get selectedDate => _datepick;
+  void getpatientMonthlyList(DateTime dontDate) async {
+    _datepick=dontDate;
     List<PatientReportModel> filteredData = [];
     receiptsformData.map((receipt) {
-      if (DateTime.parse(receipt.date).month == selectedDate.month &&
-          DateTime.parse(receipt.date).year == selectedDate.year) {
+      print(receipt.date);
+      print(dontDate);
+
+      if (DateFormat('dd-MM-yyyy').format(DateTime.parse(receipt.date).toLocal()) == DateFormat('dd-MM-yyyy').format(dontDate) ) {
         print("1234567 ${receipt.date}");
         filteredData.add(receipt);
-        print(filteredData);
+        print('gaurav 123x${dontDate}');
 
       }
     }).toList();
-    receiptsformData=filteredData;
+    listrev=filteredData;
     notifyListeners();
   }
 
@@ -114,6 +120,8 @@ class PacientForamOperation extends ChangeNotifier {
     );
   }
 
+
+
   Future getdatafromPacientReport() async {
     var rawData = await http.get(Uri.parse(
         "https://script.google.com/macros/s/AKfycbwzTvNW-q2bz6GGwWiWmG4jZo5fSd6eEQYQeyLEFn5_uwmdwUTNa9SFI7ejjl3xLW0i9A/exec"));
@@ -126,5 +134,6 @@ class PacientForamOperation extends ChangeNotifier {
       tempSevaList.add(PatientReportModel.fromJson(element));
     });
     receiptsformData = tempSevaList;
+    listrev=List.from(tempSevaList.reversed);
   }
 }
